@@ -88,233 +88,55 @@
       :sort-by.sync="sortBy"
       :sort-desc.sync="sortDesc"
       @filtered="onFiltered"
+      class="w-100"
     >
-      <template v-slot:cell(name)="row">{{ row.value.first }} {{ row.value.last }}</template>
+      <template class="w-100" v-slot:cell(name)="row">{{ row.value.first }} {{ row.value.last }}</template>
 
-      <template v-slot:cell(actions)="row">
+      <template class="w-100" v-slot:cell(actions)="row">
         <b-button size="sm" @click="view(row.item, row.index, $event.target)" class="m-1">View</b-button>
         <b-button size="sm" @click="goToEdit" class="m-1">Edit</b-button>
-        <b-button size="sm" @click="softDelete" class="m-1">Soft Delete</b-button>
-        <b-button size="sm" @click="HardDelete" class="m-1">Hard Delete</b-button>
+        <b-button size="sm" v-if="row.item.deleted_at" @click="releaseArticle(row.item)" class="m-1">Release</b-button>
+        <b-button size="sm" v-else @click="softDelete(row.item)" class="m-1">Soft Delete</b-button>
+        <!-- <b-button id="toggle-btn" @click="toggleModal">Toggle Modal</b-button> -->
+        <b-button size="sm" @click="warnToHardDelete(row.item)" class="m-1">Hard Delete</b-button>
       </template>
 
-      <template v-slot:row-details="row">
+      <template class="w-100" v-slot:row-details="row">
         <b-card>
           <ul>
-            <li v-for="(value, key) in row.item" :key="key">{{ key }}: {{ value }}</li>
+            <li
+              class="textOverflow"
+              v-for="(value, key) in row.item"
+              :key="key"
+            >{{ key }}: {{ value }}</li>
           </ul>
         </b-card>
       </template>
     </b-table>
 
-    <!-- Info modal -->
+    <!-- modal -->
     <b-modal :id="infoModal.id" :title="infoModal.title" ok-only @hide="resetInfoModal">
       <pre>{{ infoModal.content }}</pre>
+    </b-modal>
+    <b-modal ref="warn-modal" hide-footer :title="warnModal.title">
+      <div class="d-block text-center">
+        <h3>Do you want to Hard Delete?</h3>
+        <pre>{{ warnModal.content }}</pre>
+      </div>
+      <b-button class="mt-3" variant="dark" block @click="hideModal">Close</b-button>
+      <b-button class="mt-2" variant="danger" block @click="hardDelete(warnModal.id)">Hard Delete</b-button>
     </b-modal>
   </b-container>
 </template>
 
 <script>
+import firebase from "~/plugins/firebase.js";
 export default {
   middleware: "auth",
   layout: "mng",
   data() {
     return {
-      items: [
-        {
-          id: 1,
-          title: "First",
-          category: 1,
-          tag: {
-            first: "fir",
-            second: "se",
-            third: "th",
-            fourth: "fo",
-            fifth: "fif",
-            sixth: "six"
-          },
-          contents: 'test',
-          created_at: '2019/10/29 21:17:29',
-          updated_at: '2019/10/29 21:17:29',
-        },
-        {
-          id: 2,
-          title: "Second",
-          category: 2,
-          tag: {
-            first: "fir",
-            second: "se",
-            third: "th",
-            fourth: "fo",
-            fifth: "fif",
-            sixth: "six"
-          },
-          contents: 'testtest',
-          created_at: '2019/10/29 21:18:29',
-          updated_at: '2019/10/29 21:18:29',
-        },
-        {
-          id: 3,
-          title: "Third",
-          category: 3,
-          tag: {
-            first: "fir",
-            second: "se",
-            third: "th",
-            fourth: "fo",
-            fifth: "fif",
-            sixth: "six"
-          },
-          contents: 'testtesttest',
-          created_at: '2019/10/29 21:18:29',
-          updated_at: '2019/10/29 21:18:29',
-        },
-        {
-          id: 4,
-          title: "Fourth",
-          category: 4,
-          tag: {
-            first: "fir",
-            second: "se",
-            third: "th",
-            fourth: "fo",
-            fifth: "fif",
-            sixth: "six"
-          },
-          contents: 'testtesttesttest',
-          created_at: '2019/10/29 21:18:29',
-          updated_at: '2019/10/29 21:18:29',
-        },
-
-        {
-          id: 5,
-          title: "Fifth",
-          category: 5,
-          tag: {
-            first: "fir",
-            second: "se",
-            third: "th",
-            fourth: "fo",
-            fifth: "fif",
-            sixth: "six"
-          },
-          contents: 'testtesttesttesttest',
-          created_at: '2019/10/29 21:18:29',
-          updated_at: '2019/10/29 21:18:29',
-        },
-        {
-          id: 6,
-          title: "Sixth",
-          category: 6,
-          tag: {
-            first: "fir",
-            second: "se",
-            third: "th",
-            fourth: "fo",
-            fifth: "fif",
-            sixth: "six"
-          },
-          contents: 'testtesttesttesttesttesttest',
-          created_at: '2019/10/29 21:18:29',
-          updated_at: '2019/10/29 21:18:29',
-        },
-        {
-          id: 7,
-          title: "Seventh",
-          category: 7,
-          tag: {
-            first: "fir",
-            second: "se",
-            third: "th",
-            fourth: "fo",
-            fifth: "fif",
-            sixth: "six"
-          },
-          contents: 'testtesttesttesttesttesttest',
-          created_at: '2019/10/29 21:18:29',
-          updated_at: '2019/10/29 21:18:29',
-        },
-        {
-          id: 8,
-          title: "8",
-          category: 8,
-          tag: {
-            first: "fir",
-            second: "se",
-            third: "th",
-            fourth: "fo",
-            fifth: "fif",
-            sixth: "six"
-          },
-          contents: 'testtesttesttesttesttesttest',
-          created_at: '2019/10/29 21:18:29',
-          updated_at: '2019/10/29 21:18:29',
-        },
-        {
-          id: 9,
-          title: "9",
-          category: 9,
-          tag: {
-            first: "fir",
-            second: "se",
-            third: "th",
-            fourth: "fo",
-            fifth: "fif",
-            sixth: "six"
-          },
-          contents: 'testtesttesttesttesttesttest',
-          created_at: '2019/10/29 21:18:29',
-          updated_at: '2019/10/29 21:18:29',
-        },
-        {
-          id: 10,
-          title: "Seventh",
-          category: 10,
-          tag: {
-            first: "fir",
-            second: "se",
-            third: "th",
-            fourth: "fo",
-            fifth: "fif",
-            sixth: "six"
-          },
-          contents: 'testtesttesttesttesttesttest',
-          created_at: '2019/10/29 21:18:29',
-          updated_at: '2019/10/29 21:18:29',
-        },
-        {
-          id: 11,
-          title: "Seventh",
-          category: 11,
-          tag: {
-            first: "fir",
-            second: "se",
-            third: "th",
-            fourth: "fo",
-            fifth: "fif",
-            sixth: "six"
-          },
-          contents: 'testtesttesttesttesttesttest',
-          created_at: '2019/10/29 21:18:29',
-          updated_at: '2019/10/29 21:18:29',
-        },
-        {
-          id: 12,
-          title: "Seventh",
-          category: 12,
-          tag: {
-            first: "fir",
-            second: "se",
-            third: "th",
-            fourth: "fo",
-            fifth: "fif",
-            sixth: "six"
-          },
-          contents: 'testtesttesttesttesttesttest',
-          created_at: '2019/10/29 21:18:29',
-          updated_at: '2019/10/29 21:18:29',
-        }
-      ],
+      items: [],
       fields: [
         {
           key: "id",
@@ -326,22 +148,25 @@ export default {
           key: "title",
           label: "Title",
           sortable: true,
-          class: "text-center"
+          class: "text-left"
         },
         {
           key: "category",
           label: "Category",
-          sortable: true
+          sortable: true,
+          class: "text-left"
         },
         {
-          key: "tag",
-          label: "Tag",
-          sortable: true
+          key: "tags",
+          label: "Tags",
+          sortable: true,
+          class: "text-left"
         },
         {
           key: "contents",
           label: "Contents",
-          sortable: true
+          sortable: true,
+          class: "text-left textOverflow m-2"
         },
         {
           key: "created_at",
@@ -353,9 +178,14 @@ export default {
           label: "Updated at",
           sortable: true
         },
+        {
+          key: "deleted_at",
+          label: "Deleted_at",
+          sortable: true
+        },
         { key: "actions", label: "Actions" }
       ],
-      totalRows: 1,
+      totalRows: 2,
       currentPage: 1,
       perPage: 5,
       pageOptions: [5, 10, 15],
@@ -366,7 +196,12 @@ export default {
         id: "info-modal",
         title: "",
         content: ""
-      }
+      },
+      warnModal: {
+        id: "",
+        title: "",
+        content: ""
+      },
     };
   },
   computed: {
@@ -376,6 +211,24 @@ export default {
         .filter(f => f.sortable)
         .map(f => {
           return { text: f.label, value: f.key };
+        });
+    },
+    async getFirestorageRecodes() {
+      await firebase
+        .database()
+        .ref("articles")
+        .once("value")
+        .then(snapshot => {
+          let firebaseRecodes = snapshot.val();
+          for (let k in firebaseRecodes) {
+            // firebaseRecodes[k].contents = firebaseRecodes[k].contents.slice(0,10);
+            this.items.push(firebaseRecodes[k]);
+          }
+          return;
+        })
+        .catch(err => {
+          console.log("firebase's err =====", err);
+          return err;
         });
     }
   },
@@ -388,6 +241,62 @@ export default {
       this.infoModal.title = `Row index: ${index}`;
       this.infoModal.content = JSON.stringify(item, null, 2);
       this.$root.$emit("bv::show::modal", this.infoModal.id, button);
+    },
+    async synchronizeFirebaseRecodes() {
+      this.items = [];
+      await firebase
+        .database()
+        .ref("articles")
+        .once("value")
+        .then(snapshot => {
+          let firebaseRecodes = snapshot.val();
+          for (let k in firebaseRecodes) {
+            // firebaseRecodes[k].contents = firebaseRecodes[k].contents.slice(0,10);
+            this.items.push(firebaseRecodes[k]);
+          }
+          return;
+        })
+        .catch(err => {
+          console.log("firebase's err =====", err);
+          return err;
+        });
+    },
+    createDateTime() {
+      const date = new Date();
+      let year = date.getFullYear();
+      let month = ("0" + (date.getMonth() + 1)).slice(-2);
+      let day = ("0" + date.getDate()).slice(-2);
+      let hours = ("0" + date.getHours()).slice(-2);
+      let minutes = ("0" + date.getMinutes()).slice(-2);
+      let seconds = ("0" + date.getSeconds()).slice(-2);
+      let created_at = year + "/" + month + "/" + day + " " + hours + ":" + minutes + ":"  + seconds;
+      return created_at;
+    },
+    softDelete(item) {
+      item.deleted_at = this.createDateTime();
+      let updates = {};
+      updates["/articles/" + item.id + "/"] = item;
+      return firebase.database().ref().update(updates);
+    },
+    releaseArticle(item) {
+      item.deleted_at = "";
+      let updates = {};
+      updates["/articles/" + item.id + "/"] = item;
+      return firebase.database().ref().update(updates);
+    },
+    warnToHardDelete(item, index) {
+      this.warnModal.id = item.id;
+      this.warnModal.title = `Delete article about id: ${item.id}`;
+      this.warnModal.content = JSON.stringify(item, null, 2);
+      this.$refs['warn-modal'].show();
+    },
+    hideModal() {
+      this.$refs['warn-modal'].hide();
+    },
+    hardDelete(id) {
+      firebase.database().ref('articles/' + id).remove();
+      this.synchronizeFirebaseRecodes();
+      this.$refs['warn-modal'].hide();
     },
     resetInfoModal() {
       this.infoModal.title = "";
@@ -411,7 +320,6 @@ export default {
   align-items: center;
   text-align: center;
 }
-
 .title {
   font-family: "Quicksand", "Source Sans Pro", -apple-system, BlinkMacSystemFont,
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -421,7 +329,6 @@ export default {
   color: #35495e;
   letter-spacing: 1px;
 }
-
 .subtitle {
   font-weight: 300;
   font-size: 42px;
@@ -429,8 +336,12 @@ export default {
   word-spacing: 5px;
   padding-bottom: 15px;
 }
-
 .links {
   padding-top: 15px;
+}
+.textOverflow {
+  text-overflow: ellipsis;
+  -webkit-text-overflow: ellipsis; /* Safari */
+  -o-text-overflow: ellipsis; /* Opera */
 }
 </style>

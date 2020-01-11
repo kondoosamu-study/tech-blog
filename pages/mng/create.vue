@@ -25,7 +25,7 @@
       <no-ssr placeholder="Loading Your Editor...">
         <vue-editor
           id="editor"
-          v-model="form.content"
+          v-model="form.contents"
           useCustomImageHandler
           @image-added="handleImageAdded"
         />
@@ -48,10 +48,14 @@ export default {
   data() {
     return {
       form: {
+        id: "",// 左記を追加する
         title: "",
         category: "",
         tags: [],
-        content: ""
+        contents: "",
+        created_at: "",
+        updated_at: "",
+        deleted_at: ""
       },
       tag: "",
       show: true,
@@ -81,9 +85,8 @@ export default {
       let year = date.getFullYear();
       let month = ("0" + (date.getMonth() + 1)).slice(-2);
       let day = ("0" + date.getDate()).slice(-2);
-      let hours = date.getHours();
-      this.fireStoragesDirectoryName =
-        String(year) + String(month) + String(day) + String(hours) + "/";
+      let hours = ("0" + date.getHours()).slice(-2);
+      this.fireStoragesDirectoryName = String(year) + String(month) + String(day) + String(hours) + "/";
     },
     async handleImageAdded(file, Editor, cursorLocation, resetUploader) {
       if (!this.fireStoragesDirectoryName) {
@@ -114,6 +117,17 @@ export default {
       form.title = form.title.trim();
       form.category = form.category.trim();
     },
+    createDateTime() {
+      const date = new Date();
+      let year = date.getFullYear();
+      let month = ("0" + (date.getMonth() + 1)).slice(-2);
+      let day = ("0" + date.getDate()).slice(-2);
+      let hours = ("0" + date.getHours()).slice(-2);
+      let minutes = ("0" + date.getMinutes()).slice(-2);
+      let seconds = ("0" + date.getSeconds()).slice(-2);
+      let created_at = year + "/" + month + "/" + day + " " + hours + ":" + minutes + ":"  + seconds;
+      return created_at;
+    },
     async onSubmit(evt) {
       evt.preventDefault();
       this.deleteBlank(this.form);
@@ -127,14 +141,18 @@ export default {
         alert("タグが入力されていません");
         return;
       }
-      // alert(JSON.stringify(this.form));
+
+      this.form.created_at = this.createDateTime();
+      this.form.updated_at = this.form.created_at;
+
       const uuid = new Date().getTime();
+      this.form.id = uuid;
       const dbRef = firebase.database().ref(`articles/${uuid}`);
       try {
         await dbRef.set(this.form);
         this.$router.push("/mng");
       } catch (err) {
-        console.log("----------------",err);
+        console.log("----------------", err);
         this.makeToast(err.message);
       }
     },
@@ -144,7 +162,7 @@ export default {
       this.form.title = "";
       this.form.category = "";
       this.form.tags = [];
-      this.form.content = "";
+      this.form.contents = "";
       // Trick to reset/clear native browser form validation state
       this.show = false;
       this.$nextTick(() => {

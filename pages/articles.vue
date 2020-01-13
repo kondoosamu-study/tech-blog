@@ -94,10 +94,10 @@
 
       <template class="w-100" v-slot:cell(actions)="row">
         <b-button size="sm" @click="view(row.item, row.index, $event.target)" class="m-1">View</b-button>
-        <b-button size="sm" @click="goToEdit" class="m-1">Edit</b-button>
+        <!-- <b-button size="sm" @click="goToEdit(row.item)" class="m-1">Edit</b-button> -->
+        <b-button size="sm" @click="$router.push(`/edit/${row.item.id}`)" class="m-1">Edit</b-button>
         <b-button size="sm" v-if="row.item.deleted_at" @click="releaseArticle(row.item)" class="m-1">Release</b-button>
         <b-button size="sm" v-else @click="softDelete(row.item)" class="m-1">Soft Delete</b-button>
-        <!-- <b-button id="toggle-btn" @click="toggleModal">Toggle Modal</b-button> -->
         <b-button size="sm" @click="warnToHardDelete(row.item)" class="m-1">Hard Delete</b-button>
       </template>
 
@@ -212,25 +212,29 @@ export default {
         .map(f => {
           return { text: f.label, value: f.key };
         });
-    },
-    async getFirestorageRecodes() {
-      await firebase
+    }
+  },
+  async asyncData() {
+     const results = await firebase
         .database()
         .ref("articles")
         .once("value")
         .then(snapshot => {
+          let result = [];
           let firebaseRecodes = snapshot.val();
+          
           for (let k in firebaseRecodes) {
             // firebaseRecodes[k].contents = firebaseRecodes[k].contents.slice(0,10);
-            this.items.push(firebaseRecodes[k]);
+            result.push(firebaseRecodes[k]);
           }
-          return;
+          
+          return result;
         })
         .catch(err => {
           console.log("firebase's err =====", err);
           return err;
         });
-    }
+    return { items: results };
   },
   mounted() {
     // Set the initial number of items

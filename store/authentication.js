@@ -41,7 +41,7 @@ export const actions = {
             await commit('setIsLoggedIn', true);
             await commit('setUser', user.displayName);
             await commit('setEmail', user.email);
-            await this.$axios.$post("/mng/login", { loggedIn: true, user: user.displayName, email: user.email })
+            await this.$axios.$post("/", { loggedIn: true, user: user.displayName, email: user.email })
                 .then((res) => { console.log("authentication.js then ===", res); })
                 .catch((err) => { console.log(err) });
             return;
@@ -49,4 +49,7 @@ export const actions = {
             console.log("google login err ", err);
         }
     },
+    async logoutFromGoogleAuth({ commit }){
+      await commit('setIsLoggedIn', false);
+    }
 }

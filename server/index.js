@@ -45,12 +45,11 @@ async function start() {
     app.use(bodyParser.urlencoded({ extended: false }));
     app.use(bodyParser.json());
 
-    app.post('/mng/login', (req, res) => {
+    app.post('/', (req, res) => {
         // 値を保存する
         req.session.loggedIn = req.body.loggedIn;
         req.session.user = req.body.user;
         req.session.email = req.body.email;
-        // res.send('OK');
         res.send("Save session about server/index.js loggedIn is " + req.session.loggedIn + " user is " + req.session.user + " email is " + req.session.email);
     });
 

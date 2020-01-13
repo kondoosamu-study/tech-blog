@@ -1,10 +1,10 @@
 <template>
   <div class="mt-4 mx-4">
+    <h1>Edit article about {{ form.id }}</h1>
     <b-form @submit="onSubmit" @reset="onReset" v-if="show">
       <b-form-group id="input-group-1" label="タイトル：" label-for="title" description="記事とタブのタイトル">
         <b-form-input id="title" v-model="form.title" required placeholder="記事のタイトルを記入して下さい。"></b-form-input>
       </b-form-group>
-
       <b-form-group id="input-group-2" label="カテゴリ：" label-for="category">
         <b-form-input id="category" v-model="form.category" required placeholder="記事のカテゴリを記入して下さい。"></b-form-input>
       </b-form-group>
@@ -22,6 +22,13 @@
         <b-button @click="pushTag(tag)" variant="info">タグ追加</b-button>
       </b-form-group>
 
+      <b-card title="Create, Update and Soft Delete Time"  class="mb-2">
+        <b-card-text>Created_at: {{form.created_at}}</b-card-text>
+        <b-card-text>Updated_at: {{form.updated_at}}</b-card-text>
+        <b-card-text v-if="form.deleted_at">Deleted_at: {{form.deleted_at}}</b-card-text>
+        <b-card-text v-else>Deleted_at: Not Deleted</b-card-text>
+      </b-card>
+
       <no-ssr placeholder="Loading Your Editor...">
         <vue-editor
           id="editor"
@@ -31,12 +38,27 @@
         />
       </no-ssr>
 
+      <b-button v-if="form.deleted_at" @click="releaseArticle" variant="success" class="mt-2">Release</b-button>
+      <b-button v-else @click="softDelete" variant="warning" class="mt-2">Soft Delete</b-button>
+      <b-button　@click="warnToHardDelete" variant="danger" class="mt-2">Hard Delete</b-button>
+      <b-button variant="secondary" class="mt-2">
+        <nuxt-link class="light" to="/">Cansel</nuxt-link>
+      </b-button>
       <b-button type="submit" variant="primary" class="mt-2">Submit</b-button>
-      <b-button type="reset" variant="danger" class="mt-2">Reset</b-button>
     </b-form>
     <b-card class="mt-3" header="Form Data Result">
       <pre class="m-0">{{ form }}</pre>
     </b-card>
+
+    <!-- modal -->
+    <b-modal ref="warn-modal" hide-footer :title="form.title">
+      <div class="d-block text-center">
+        <h3>Do you want to Hard Delete?</h3>
+        <pre>{{ warnModal.content }}</pre>
+      </div>
+      <b-button class="mt-3" variant="dark" block @click="hideModal">Close</b-button>
+      <b-button class="mt-2" variant="danger" block @click="hardDelete">Hard Delete</b-button>
+    </b-modal>
   </div>
 </template>
 
@@ -60,10 +82,51 @@ export default {
       tag: "",
       show: true,
       publicDirectoryPath: "public/",
-      fireStoragesDirectoryName: ""
+      fireStoragesDirectoryName: "",
+      warnModal: {
+        content: ""
+      },
     };
   },
+  async asyncData({ route }) {
+     const result = await firebase
+        .database()
+        .ref("articles/"+ route.params.id)
+        .once("value")
+        .then(snapshot => {
+          return snapshot.val();
+          // return result;
+        })
+        .catch(err => {
+          console.log("firebase's err =====", err);
+          return err;
+        });
+    return { form: result };
+  },
   methods: {
+    releaseArticle() {
+      this.form.deleted_at = "";
+      let updates = {};
+      updates["/articles/" + this.form.id + "/"] = this.form;
+      return firebase.database().ref().update(updates);
+    },
+    softDelete() {
+      this.form.deleted_at = this.createDateTime();
+      let updates = {};
+      updates["/articles/" + this.form.id + "/"] = this.form;
+      return firebase.database().ref().update(updates);
+    },
+    warnToHardDelete(){
+      this.warnModal.content = JSON.stringify(this.form, null, 2);
+      this.$refs['warn-modal'].show();
+    },
+    hideModal() {
+      this.$refs['warn-modal'].hide();
+    },
+    hardDelete() {
+      firebase.database().ref('articles/' + this.form.id).remove();
+      this.$router.push("/articles");
+    },
     pushTag(tag) {
       if (tag !== null && tag !== "") {
         tag = tag.trim();
@@ -142,15 +205,12 @@ export default {
         return;
       }
 
-      this.form.created_at = this.createDateTime();
-      this.form.updated_at = this.form.created_at;
+      this.form.updated_at = this.createDateTime();
 
-      const uuid = new Date().getTime();
-      this.form.id = uuid;
-      const dbRef = firebase.database().ref(`articles/${uuid}`);
+      const dbRef = firebase.database().ref(`articles/${this.form.id}`);
       try {
         await dbRef.set(this.form);
-        this.$router.push("/mng");
+        this.$router.push("/articles");
       } catch (err) {
         console.log("----------------", err);
         this.makeToast(err.message);
@@ -210,5 +270,9 @@ export default {
 
 .links {
   padding-top: 15px;
+}
+
+a {
+  color: white;
 }
 </style>

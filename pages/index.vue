@@ -1,16 +1,11 @@
 <template>
   <div class="container">
-    <div>
-      <logo />
-      <h1 class="title">m_blog</h1>
-      <h2 class="subtitle">My blog Nuxt.js project.</h2>
-      <div class="links">
-        <a href="https://nuxtjs.org/" target="_blank" class="button--green">Documentation</a>
-        <v-btn @click="handleGoogleLogin">Google Login</v-btn>
-        <div v-if="loggedIn">Are you loggedIn? :{{ loggedIn }}</div>
-        <div v-if="loggedIn">Welcome {{ userName }} !!</div>
-        <div v-if="loggedIn">You're e-mail address is {{ email }} !!</div>
-      </div>
+    <div class="links">
+      <h1 class="title">Tech Blog Login Page</h1>
+      <b-button @click="handleGoogleLogin" variant="primary" size="lg">Google Login</b-button>
+      <div v-if="loggedIn">Are you loggedIn? :{{ loggedIn }}</div>
+      <div v-if="loggedIn">Welcome {{ user }} !!</div>
+      <div v-if="loggedIn">Email {{ email }} !!</div>
     </div>
   </div>
 </template>
@@ -24,11 +19,26 @@ export default {
     Logo
   },
   computed: {
-    ...mapGetters("authentication", ["userName", "loggedIn", "email"])
+    ...mapGetters("authentication", ["user", "loggedIn"])
+  },
+  async fetch({ store, app, redirect }) {
+    const { loggedIn, user, email } = await app.$axios.$get("/auth-check");
+    store.commit("authentication/setIsLoggedIn", loggedIn);
+    store.commit("authentication/setUser", user);
+    store.commit("authentication/setEmail", email);
+    if(loggedIn) {
+      redirect('/articles');
+    }
   },
   methods: {
-    handleGoogleLogin() {
-      this.googleLogin();
+    checkLoggedIn() {
+      if (this.loggedIn) {
+        this.$router.push("/articles");
+      }
+    },
+    async handleGoogleLogin() {
+      await this.googleLogin();
+      await this.checkLoggedIn();
     },
     ...mapActions("authentication", ["googleLogin"])
   }

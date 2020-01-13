@@ -5,13 +5,12 @@
       <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
       <b-collapse id="nav-collapse" is-nav>
         <b-navbar-nav>
-          <b-nav-item href="/">Blog Top</b-nav-item>
-          <b-nav-item href="/mng">Articles</b-nav-item>
-          <b-nav-item href="/mng/create">Create Article</b-nav-item>
+          <b-nav-item href="/">Articles</b-nav-item>
+          <b-nav-item href="/create">Create Article</b-nav-item>
         </b-navbar-nav>
         <b-navbar-nav class="ml-auto">
           <b-nav-item right>
-            <b-nav-item href="#">Sign Out</b-nav-item>
+            <b-nav-item @click="logout">Sign Out</b-nav-item>
           </b-nav-item>
         </b-navbar-nav>
       </b-collapse>
@@ -24,10 +23,10 @@
 export default {
   methods: {
     logout() {
-      this.$auth();
+      // this.logoutFromGoogleAuth();
       this.$cookies.remove("token");
-      this.$store.commit("auth/setLoggedIn", false);
-      this.$router.push("/admin/login");
+      this.$store.commit("authentication/setLoggedIn", false);
+      this.$router.push("/");
     }
   }
 };

@@ -5,6 +5,13 @@
       <b-form-group id="input-group-1" label="タイトル：" label-for="title" description="記事とタブのタイトル">
         <b-form-input id="title" v-model="form.title" required placeholder="記事のタイトルを記入して下さい。"></b-form-input>
       </b-form-group>
+
+      <b-form-group id="input-group-2" label="サムネイル：" label-for="thumbnail">
+        <b-form-select id="thumbnail" v-model="form.thumbnailName" required :options="options" v-on:change="setSelectedThumbnailAsFormData"></b-form-select>
+        <div class="mt-3">Selected: <strong>{{ form.thumbnailName }}</strong></div>
+      </b-form-group>
+      <b-img v-if="form.thumbnailName" :src="form.thumbnailUrl" thumbnail fluid alt="selected thumbnail" class="p-4 bg-white"></b-img>
+
       <b-form-group id="input-group-2" label="カテゴリ：" label-for="category">
         <b-form-input id="category" v-model="form.category" required placeholder="記事のカテゴリを記入して下さい。"></b-form-input>
       </b-form-group>
@@ -23,10 +30,10 @@
       </b-form-group>
 
       <b-card title="Create, Update and Soft Delete Time"  class="mb-2">
-        <b-card-text>Created_at: {{form.created_at}}</b-card-text>
-        <b-card-text>Updated_at: {{form.updated_at}}</b-card-text>
-        <b-card-text v-if="form.deleted_at">Deleted_at: {{form.deleted_at}}</b-card-text>
-        <b-card-text v-else>Deleted_at: Not Deleted</b-card-text>
+        <b-card-text>Created At: {{form.createdAt}}</b-card-text>
+        <b-card-text>Updated At: {{form.updatedAt}}</b-card-text>
+        <b-card-text v-if="form.deletedAt">Deleted At: {{form.deletedAt}}</b-card-text>
+        <b-card-text v-else>Deleted At: Not Deleted</b-card-text>
       </b-card>
 
       <no-ssr placeholder="Loading Your Editor...">
@@ -38,7 +45,7 @@
         />
       </no-ssr>
 
-      <b-button v-if="form.deleted_at" @click="releaseArticle" variant="success" class="mt-2">Release</b-button>
+      <b-button v-if="form.deletedAt" @click="releaseArticle" variant="success" class="mt-2">Release</b-button>
       <b-button v-else @click="softDelete" variant="warning" class="mt-2">Soft Delete</b-button>
       <b-button　@click="warnToHardDelete" variant="danger" class="mt-2">Hard Delete</b-button>
       <b-button variant="secondary" class="mt-2">
@@ -65,28 +72,44 @@
 <script>
 import firebase from "~/plugins/firebase.js";
 import SimpleCrypto from "simple-crypto-js";
+import { mapGetters, mapActions } from "vuex";
 export default {
+  // 一時コメントアウト
+  // middleware: "auth",
   layout: "mng",
   data() {
     return {
       form: {
-        id: "",// 左記を追加する
+        id: "",
         title: "",
+        thumbnailName: null,
+        thumbnailFullPath: null,
+        thumbnailUrl: null,
         category: "",
         tags: [],
         contents: "",
-        created_at: "",
-        updated_at: "",
-        deleted_at: ""
+        createdAt: "",
+        updatedAt: "",
+        deletedAt: ""
       },
       tag: "",
       show: true,
       publicDirectoryPath: "public/",
       fireStoragesDirectoryName: "",
+      options: [{value: null, text: 'Please select an option', selected: true}],
       warnModal: {
         content: ""
       },
     };
+  },
+  computed: {
+    ...mapGetters({ thumbnails:"getThumbnails" }),
+  },
+  async mounted() {
+    await this.fetchThumbnails();
+    for (let thumbnail of this.thumbnails) {
+        this.options.push({value: thumbnail.name, text: thumbnail.name.split('_logo')[0]});
+    }
   },
   async asyncData({ route }) {
      const result = await firebase
@@ -104,14 +127,19 @@ export default {
     return { form: result };
   },
   methods: {
+    setSelectedThumbnailAsFormData() {
+      let selectedThumbnail = this.thumbnails.find(element => element.name === this.form.thumbnailName);
+      this.form.thumbnailFullPath = selectedThumbnail.path;
+      this.form.thumbnailUrl = selectedThumbnail.url;
+    },
     releaseArticle() {
-      this.form.deleted_at = "";
+      this.form.deletedAt = "";
       let updates = {};
       updates["/articles/" + this.form.id + "/"] = this.form;
       return firebase.database().ref().update(updates);
     },
     softDelete() {
-      this.form.deleted_at = this.createDateTime();
+      this.form.deletedAt = this.createDateTime();
       let updates = {};
       updates["/articles/" + this.form.id + "/"] = this.form;
       return firebase.database().ref().update(updates);
@@ -188,8 +216,8 @@ export default {
       let hours = ("0" + date.getHours()).slice(-2);
       let minutes = ("0" + date.getMinutes()).slice(-2);
       let seconds = ("0" + date.getSeconds()).slice(-2);
-      let created_at = year + "/" + month + "/" + day + " " + hours + ":" + minutes + ":"  + seconds;
-      return created_at;
+      let createdAt = year + "/" + month + "/" + day + " " + hours + ":" + minutes + ":"  + seconds;
+      return createdAt;
     },
     async onSubmit(evt) {
       evt.preventDefault();
@@ -205,7 +233,7 @@ export default {
         return;
       }
 
-      this.form.updated_at = this.createDateTime();
+      this.form.updatedAt = this.createDateTime();
 
       const dbRef = firebase.database().ref(`articles/${this.form.id}`);
       try {
@@ -235,7 +263,8 @@ export default {
         variant: "danger",
         solid: true
       });
-    }
+    },
+    ...mapActions(['fetchThumbnails'])
   }
 };
 </script>

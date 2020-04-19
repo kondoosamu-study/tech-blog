@@ -93,31 +93,28 @@
       <template class="w-100" v-slot:cell(name)="row">{{ row.value.first }} {{ row.value.last }}</template>
 
       <template class="w-100" v-slot:cell(actions)="row">
-        <b-button size="sm" @click="view(row.item, row.index, $event.target)" class="m-1">View</b-button>
-        <!-- <b-button size="sm" @click="goToEdit(row.item)" class="m-1">Edit</b-button> -->
-        <b-button size="sm" @click="$router.push(`/edit/${row.item.id}`)" class="m-1">Edit</b-button>
-        <b-button size="sm" v-if="row.item.deleted_at" @click="releaseArticle(row.item)" class="m-1">Release</b-button>
-        <b-button size="sm" v-else @click="softDelete(row.item)" class="m-1">Soft Delete</b-button>
-        <b-button size="sm" @click="warnToHardDelete(row.item)" class="m-1">Hard Delete</b-button>
+        <b-button size="sm" @click="view(row.item, row.index, $event.target)" variant="info" class="m-1">View</b-button>
+        <b-button size="sm" @click="$router.push(`/edit/${row.item.id}`)" variant="secondary" class="m-1">Edit</b-button>
+        <b-button size="sm" v-if="row.item.deletedAt" @click="releaseArticle(row.item)" variant="success" class="m-1">Release</b-button>
+        <b-button size="sm" v-else @click="softDelete(row.item)" variant="warning" class="m-1">Soft Delete</b-button>
+        <b-button size="sm" @click="warnToHardDelete(row.item)" variant="danger" class="m-1">Hard Delete</b-button>
       </template>
 
       <template class="w-100" v-slot:row-details="row">
         <b-card>
           <ul>
-            <li
-              class="textOverflow"
-              v-for="(value, key) in row.item"
-              :key="key"
-            >{{ key }}: {{ value }}</li>
+            <li class="textOverflow" v-for="(value, key) in row.item" :key="key">{{ key }}: {{ value }}</li>
           </ul>
         </b-card>
       </template>
     </b-table>
 
-    <!-- modal -->
+    <!-- info modal -->
     <b-modal :id="infoModal.id" :title="infoModal.title" ok-only @hide="resetInfoModal">
       <pre>{{ infoModal.content }}</pre>
+      <b-img :src="infoModal.thumbnailUrl" thumbnail fluid class="p-4 bg-white"></b-img>
     </b-modal>
+    <!-- warn modal -->
     <b-modal ref="warn-modal" hide-footer :title="warnModal.title">
       <div class="d-block text-center">
         <h3>Do you want to Hard Delete?</h3>
@@ -131,8 +128,11 @@
 
 <script>
 import firebase from "~/plugins/firebase.js";
+import { mapGetters, mapActions } from "vuex";
 export default {
-  middleware: "auth",
+  // middleware: ["auth", "getThumbnails"],
+  // 一時コメントアウト
+  // middleware: "auth",
   layout: "mng",
   data() {
     return {
@@ -147,6 +147,18 @@ export default {
         {
           key: "title",
           label: "Title",
+          sortable: true,
+          class: "text-left"
+        },
+        {
+          key: "thumbnailName",
+          label: "Thumbnail",
+          sortable: true,
+          class: "text-left"
+        },
+        {
+          key: "thumbnailUrl",
+          label: "Thumbnail Image URL",
           sortable: true,
           class: "text-left"
         },
@@ -169,18 +181,30 @@ export default {
           class: "text-left textOverflow m-2"
         },
         {
-          key: "created_at",
-          label: "Created at",
+          key: "series",
+          label: "Series",
+          sortable: true,
+          class: "text-left textOverflow m-2"
+        },
+        {
+          key: "seriesrder",
+          label: "Series Order",
+          sortable: true,
+          class: "text-left textOverflow m-2"
+        },
+        {
+          key: "createdAt",
+          label: "Created At",
           sortable: true
         },
         {
-          key: "updated_at",
-          label: "Updated at",
+          key: "updatedAt",
+          label: "Updated At",
           sortable: true
         },
         {
-          key: "deleted_at",
-          label: "Deleted_at",
+          key: "deletedAt",
+          label: "Deleted At",
           sortable: true
         },
         { key: "actions", label: "Actions" }
@@ -195,7 +219,8 @@ export default {
       infoModal: {
         id: "info-modal",
         title: "",
-        content: ""
+        content: "",
+        thumbnailUrl: ""
       },
       warnModal: {
         id: "",
@@ -212,7 +237,8 @@ export default {
         .map(f => {
           return { text: f.label, value: f.key };
         });
-    }
+    },
+    ...mapGetters({ thumbnails:"getThumbnails" }),
   },
   async asyncData() {
      const results = await firebase
@@ -222,12 +248,9 @@ export default {
         .then(snapshot => {
           let result = [];
           let firebaseRecodes = snapshot.val();
-          
-          for (let k in firebaseRecodes) {
-            // firebaseRecodes[k].contents = firebaseRecodes[k].contents.slice(0,10);
-            result.push(firebaseRecodes[k]);
+          for (let recodeNumber in firebaseRecodes) {
+            result.push(firebaseRecodes[recodeNumber]);
           }
-          
           return result;
         })
         .catch(err => {
@@ -236,14 +259,16 @@ export default {
         });
     return { items: results };
   },
-  mounted() {
-    // Set the initial number of items
+  // 描画された後に実行される為、firebaseが使用可能
+  async mounted() {
+    await this.fetchThumbnails();
     this.totalRows = this.items.length;
   },
   methods: {
     view(item, index, button) {
       this.infoModal.title = `Row index: ${index}`;
       this.infoModal.content = JSON.stringify(item, null, 2);
+      this.infoModal.thumbnailUrl = item.thumbnailUrl;
       this.$root.$emit("bv::show::modal", this.infoModal.id, button);
     },
     async synchronizeFirebaseRecodes() {
@@ -273,17 +298,17 @@ export default {
       let hours = ("0" + date.getHours()).slice(-2);
       let minutes = ("0" + date.getMinutes()).slice(-2);
       let seconds = ("0" + date.getSeconds()).slice(-2);
-      let created_at = year + "/" + month + "/" + day + " " + hours + ":" + minutes + ":"  + seconds;
-      return created_at;
+      let createdAt = year + "/" + month + "/" + day + " " + hours + ":" + minutes + ":"  + seconds;
+      return createdAt;
     },
     softDelete(item) {
-      item.deleted_at = this.createDateTime();
+      item.deletedAt = this.createDateTime();
       let updates = {};
       updates["/articles/" + item.id + "/"] = item;
       return firebase.database().ref().update(updates);
     },
     releaseArticle(item) {
-      item.deleted_at = "";
+      item.deletedAt = "";
       let updates = {};
       updates["/articles/" + item.id + "/"] = item;
       return firebase.database().ref().update(updates);
@@ -310,7 +335,8 @@ export default {
       // Trigger pagination to update the number of buttons/pages due to filtering
       this.totalRows = filteredItems.length;
       this.currentPage = 1;
-    }
+    },
+    ...mapActions(['fetchThumbnails'])
   }
 };
 </script>

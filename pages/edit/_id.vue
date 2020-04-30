@@ -7,10 +7,10 @@
       </b-form-group>
 
       <b-form-group id="input-group-2" label="サムネイル：" label-for="thumbnail">
-        <b-form-select id="thumbnail" v-model="form.thumbnailName" required :options="options" v-on:change="setSelectedThumbnailAsFormData"></b-form-select>
-        <div class="mt-3">Selected: <strong>{{ form.thumbnailName }}</strong></div>
+        <b-form-select id="thumbnail" v-model="form.thumbnail_name" required :options="options" v-on:change="setSelectedThumbnailAsFormData"></b-form-select>
+        <div class="mt-3">Selected: <strong>{{ form.thumbnail_name }}</strong></div>
       </b-form-group>
-      <b-img v-if="form.thumbnailName" :src="form.thumbnailUrl" thumbnail fluid alt="selected thumbnail" class="p-4 bg-white"></b-img>
+      <b-img v-if="form.thumbnail_name" :src="form.thumbnail_url" thumbnail fluid alt="selected thumbnail" class="p-4 bg-white"></b-img>
 
       <b-form-group id="input-group-2" label="カテゴリ：" label-for="category">
         <b-form-input id="category" v-model="form.category" required placeholder="記事のカテゴリを記入して下さい。"></b-form-input>
@@ -30,8 +30,8 @@
       </b-form-group>
 
       <b-card title="Create, Update and Soft Delete Time"  class="mb-2">
-        <b-card-text>Created At: {{form.createdAt}}</b-card-text>
-        <b-card-text>Updated At: {{form.updatedAt}}</b-card-text>
+        <b-card-text>Created At: {{form.created_at}}</b-card-text>
+        <b-card-text>Updated At: {{form.updated_at}}</b-card-text>
         <b-card-text v-if="form.deletedAt">Deleted At: {{form.deletedAt}}</b-card-text>
         <b-card-text v-else>Deleted At: Not Deleted</b-card-text>
       </b-card>
@@ -45,7 +45,7 @@
         />
       </no-ssr>
 
-      <b-button v-if="form.deletedAt" @click="releaseArticle" variant="success" class="mt-2">Release</b-button>
+      <b-button v-if="form.deleted_at" @click="releaseArticle" variant="success" class="mt-2">Release</b-button>
       <b-button v-else @click="softDelete" variant="warning" class="mt-2">Soft Delete</b-button>
       <b-button　@click="warnToHardDelete" variant="danger" class="mt-2">Hard Delete</b-button>
       <b-button variant="secondary" class="mt-2">
@@ -72,25 +72,30 @@
 <script>
 import firebase from "~/plugins/firebase.js";
 import SimpleCrypto from "simple-crypto-js";
+import axios from 'axios';
 import { mapGetters, mapActions } from "vuex";
 export default {
   // 一時コメントアウト
   // middleware: "auth",
+
+  // [MySQL用機能開発]
+  // 1. route.params.id を元にMySQLから記事データを取得する
+  // 2. 
   layout: "mng",
   data() {
     return {
       form: {
         id: "",
         title: "",
-        thumbnailName: null,
-        thumbnailFullPath: null,
-        thumbnailUrl: null,
+        thumbnail_name: null,
+        thumbnail_full_path: null,
+        thumbnail_url: null,
         category: "",
         tags: [],
         contents: "",
-        createdAt: "",
-        updatedAt: "",
-        deletedAt: ""
+        created_at: "",
+        updated_at: "",
+        deleted_at: ""
       },
       tag: "",
       show: true,
@@ -112,37 +117,40 @@ export default {
     }
   },
   async asyncData({ route }) {
-     const result = await firebase
-        .database()
-        .ref("articles/"+ route.params.id)
-        .once("value")
-        .then(snapshot => {
-          return snapshot.val();
-          // return result;
-        })
-        .catch(err => {
-          console.log("firebase's err =====", err);
-          return err;
-        });
-    return { form: result };
+    const { data } = await axios.get(`http://0.0.0.0:3000/api/article/${route.params.id}`);
+    console.log('asyncData === ', data);
+    let tags = data[0].tags.split(',');
+    data[0].tags = tags;
+    return { form: data[0] };
+
+
+    //  const result = await firebase
+    //     .database()
+    //     .ref("articles/"+ route.params.id)
+    //     .once("value")
+    //     .then(snapshot => {
+    //       return snapshot.val();
+    //       // return result;
+    //     })
+    //     .catch(err => {
+    //       console.log("firebase's err =====", err);
+    //       return err;
+    //     });
+    // return { form: result };
   },
   methods: {
     setSelectedThumbnailAsFormData() {
       let selectedThumbnail = this.thumbnails.find(element => element.name === this.form.thumbnailName);
-      this.form.thumbnailFullPath = selectedThumbnail.path;
-      this.form.thumbnailUrl = selectedThumbnail.url;
+      this.form.thumbnail_full_path = selectedThumbnail.path;
+      this.form.thumbnail_url = selectedThumbnail.url;
     },
-    releaseArticle() {
-      this.form.deletedAt = "";
-      let updates = {};
-      updates["/articles/" + this.form.id + "/"] = this.form;
-      return firebase.database().ref().update(updates);
+    async releaseArticle() {
+      const { data } = await axios.post('http://0.0.0.0:3000/api/release', this.form);
+      this.form.deleted_at = data.deleted_at;
     },
-    softDelete() {
-      this.form.deletedAt = this.createDateTime();
-      let updates = {};
-      updates["/articles/" + this.form.id + "/"] = this.form;
-      return firebase.database().ref().update(updates);
+    async softDelete() {
+      this.form.deleted_at = this.createDateTime();
+      const { data } = await axios.post('http://0.0.0.0:3000/api/soft-delete', this.form);
     },
     warnToHardDelete(){
       this.warnModal.content = JSON.stringify(this.form, null, 2);
@@ -151,9 +159,11 @@ export default {
     hideModal() {
       this.$refs['warn-modal'].hide();
     },
-    hardDelete() {
-      firebase.database().ref('articles/' + this.form.id).remove();
-      this.$router.push("/articles");
+    async hardDelete() {
+      const { data } = axios.post('http://0.0.0.0:3000/api/delete-article', this.form.id);
+      // [hard deleteしたarticleをitemsから削除する処理を追加する]
+
+      this.$refs['warn-modal'].hide();
     },
     pushTag(tag) {
       if (tag !== null && tag !== "") {
@@ -216,7 +226,7 @@ export default {
       let hours = ("0" + date.getHours()).slice(-2);
       let minutes = ("0" + date.getMinutes()).slice(-2);
       let seconds = ("0" + date.getSeconds()).slice(-2);
-      let createdAt = year + "/" + month + "/" + day + " " + hours + ":" + minutes + ":"  + seconds;
+      let createdAt = year + "-" + month + "-" + day + " " + hours + ":" + minutes + ":"  + seconds;
       return createdAt;
     },
     async onSubmit(evt) {
@@ -233,16 +243,17 @@ export default {
         return;
       }
 
-      this.form.updatedAt = this.createDateTime();
+      this.form.updated_at = this.createDateTime();
+      this.$store.dispatch('updateArticle', { form: this.form });
 
-      const dbRef = firebase.database().ref(`articles/${this.form.id}`);
-      try {
-        await dbRef.set(this.form);
-        this.$router.push("/articles");
-      } catch (err) {
-        console.log("----------------", err);
-        this.makeToast(err.message);
-      }
+      // const dbRef = firebase.database().ref(`articles/${this.form.id}`);
+      // try {
+      //   await dbRef.set(this.form);
+      //   this.$router.push("/articles");
+      // } catch (err) {
+      //   console.log("----------------", err);
+      //   this.makeToast(err.message);
+      // }
     },
     onReset(evt) {
       evt.preventDefault();

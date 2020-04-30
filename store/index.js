@@ -1,5 +1,5 @@
 import firebase from "~/plugins/firebase.js";
-import axios from 'axios'
+import axios from 'axios';
 
 export const state = () => ({
   thumbnails: [],
@@ -68,6 +68,12 @@ export const mutations = {
 
 // clientサイドではfetchで呼び出す
 export const actions = {
+  async fetchAllArticles({ commit }) {
+    const { data } = await axios.get('/api/articles');
+    console.log('all articles ===== ', data);
+    
+    commit('setAllArticles', data);
+  },
   async fetchThumbnails({ commit }) {
     let storage = firebase.storage();
     let storageReference = await storage.ref('logo').listAll();
@@ -99,7 +105,8 @@ export const actions = {
   },
 
   async fetchAllCategories({ commit }) {
-    const { data } = await this.$axios.get('/api/category');
+    // const { data } = await axios.get('/api/category');
+    const { data } = await axios.get('http://0.0.0.0:3000/api/category');
     commit('setAllCategories', data);
     
     let categoriesName = [];
@@ -109,7 +116,8 @@ export const actions = {
     commit('setAllCategoriesName', categoriesName);
   },
   async fetchAllTags({ commit }) {
-    const { data } = await this.$axios.get('/api/tag');
+    // const { data } = await axios.get('/api/tag');
+    const { data } = await axios.get('http://0.0.0.0:3000/api/tag');
     console.log(data);
     
     commit('setAllTags', data);
@@ -121,7 +129,8 @@ export const actions = {
     commit('setAllTagsName', tagsName);
   },
   async fetchAllSeries({ commit }) {
-    const { data } = await this.$axios.get('/api/series');
+    // const { data } = await axios.get('/api/series');
+    const { data } = await axios.get('http://0.0.0.0:3000/api/series');
     commit('setAllSeries', data);
     
     let seriesName = [];
@@ -131,7 +140,16 @@ export const actions = {
     commit('setAllSeriesName', seriesName);
   },
   async insertNewArticle({},{ form }) {
-    let { data } = await this.$axios.post('/api/new-article', {params: form});
+    let { data } = await axios.post('http://0.0.0.0:3000/api/new-article', {params: form});
+    
+    if (data === true) {
+      this.$router.push("/articles");
+    }
+  },
+  async updateArticle({},{ form }) {
+    let { data } = await axios.post('http://0.0.0.0:3000/api/edit', {params: form});
+    console.log(data);
+    
     
     if (data === true) {
       this.$router.push("/articles");

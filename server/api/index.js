@@ -107,8 +107,8 @@ router.post('/new-article', async (req, res) => {
 		console.log('queryParameter', queryParameter);
 
 		// 【category】
-		searchCategoryQuery = searchCategoryQuery.replace('CATEGORY_NAME', queryParameter.category);
-		const categoryRecord = await query(searchCategoryQuery);
+		let searchCategoryQueryForExecute = searchCategoryQuery.replace('CATEGORY_NAME', queryParameter.category);
+		const categoryRecord = await query(searchCategoryQueryForExecute);
 		// 値が存在する場合
 		// 値
 		// rows [ RowDataPacket { id: 3, name: 'Linux' } ]
@@ -124,8 +124,8 @@ router.post('/new-article', async (req, res) => {
 		console.log('categoryRecord ==== ', categoryRecord);
 
 		if (!Object.keys(categoryRecord).length) {
-			insertNewCategoryQuery = insertNewCategoryQuery.replace('CATEGORY_NAME', queryParameter.category);
-			const insertCategory = await query(insertNewCategoryQuery);
+			let insertNewCategoryQueryForExecute = insertNewCategoryQuery.replace('CATEGORY_NAME', queryParameter.category);
+			const insertCategory = await query(insertNewCategoryQueryForExecute);
 			let { insertId } = insertCategory;
 			categoryResult = { id: insertId, name: queryParameter.category };
 
@@ -136,8 +136,8 @@ router.post('/new-article', async (req, res) => {
 		console.log('categoryResult ======', categoryResult);
 
 		// 【thumbnail】
-		searchThumbnailQuery = searchThumbnailQuery.replace('THUMBNAIL_NAME', queryParameter.thumbnailName);
-		const thumbnailRecord = await query(searchThumbnailQuery);
+		let searchThumbnailQueryForExecute = searchThumbnailQuery.replace('THUMBNAIL_NAME', queryParameter.thumbnailName);
+		const thumbnailRecord = await query(searchThumbnailQueryForExecute);
 		console.log('thumbnailRecord ==== ', thumbnailRecord);
 		console.log('thumbnailRecord のkeys === ', Object.keys(thumbnailRecord));
 
@@ -170,16 +170,16 @@ router.post('/new-article', async (req, res) => {
 
 		// 【series】
 		if (queryParameter.seriesName.length) {
-			searchSeriesQuery = searchSeriesQuery.replace('SERIES_NAME', queryParameter.seriesName);
-			const seriesRecord = await query(searchSeriesQuery);
+			let searchSeriesQueryForExecution = searchSeriesQuery.replace('SERIES_NAME', queryParameter.seriesName);
+			const seriesRecord = await query(searchSeriesQueryForExecution);
 			
 			console.log('seriesRecordのtype', typeof (seriesRecord));
 			console.log('seriesRecord のkeys === ', Object.keys(seriesRecord));
 			console.log('seriesRecord ==== ', seriesRecord);
 
 			if (!Object.keys(seriesRecord).length) {
-				insertNewSeriesQuery = insertNewSeriesQuery.replace('SERIES_NAME', queryParameter.seriesName);
-				const insertSeries = await query(insertNewSeriesQuery);
+				let insertNewSeriesQueryForExecution = insertNewSeriesQuery.replace('SERIES_NAME', queryParameter.seriesName);
+				const insertSeries = await query(insertNewSeriesQueryForExecution);
 				let { insertId } = insertSeries;
 				seriesResult = { id: insertId, name: queryParameter.seriesName };
 
@@ -193,13 +193,15 @@ router.post('/new-article', async (req, res) => {
 		}
 
 		// 【articles】
-		console.log("before contents ==== ", queryParameter.contents);
+		// [p1]
+		let contents = queryParameter.contents.replace(/\"/g, '"').replace(/\n/g, '<br>');
+		contents = contents.replace(/\'/g, 'SINGLE_QUOTE').replace(/\"/g, 'DOUBLE_QUOTE');
+		// [p2]
+		// let contents = queryParameter.contents.replace(/\'/g, 'SINGLE_QUOTE').replace(/\"/g, 'DOUBLE_QUOTE');// 2020/04/30 現在の設定で DOUBLE_QUOTE設定を削除してみる
 		// let contents = queryParameter.contents.replace(/\'/g, 'SINGLE_QUOTE');
-		let contents = queryParameter.contents.replace(/\'/g, 'SINGLE_QUOTE').replace(/\"/g, 'DOUBLE_QUOTE');// 2020/04/30 現在の設定で DOUBLE_QUOTE設定を削除してみる
 		// let contents = queryParameter.contents.replace(/\'/, 'SINGLE_QUOTE').replace(/\\/, '\\\\');
-		console.log("after contents ==== ", contents);
 		
-		insertNewArticleQuery = insertNewArticleQuery.replace('TITLE', queryParameter.title)
+		let insertNewArticleQueryForExecution = insertNewArticleQuery.replace('TITLE', queryParameter.title)
 			.replace('CATEGORY_ID', categoryResult.id)
 			.replace('CONTENTS', contents)
 			.replace('THUMBNAIL_ID', thumbnailResult.id)
@@ -207,20 +209,23 @@ router.post('/new-article', async (req, res) => {
 			.replace('SERIES_ORDER', queryParameter.seriesOrder)
 			.replace('CREATED_AT', queryParameter.createdAt)
 			.replace('UPDATED_AT', queryParameter.updatedAt);
-		const insertArticles = await query(insertNewArticleQuery);
+		const insertArticles = await query(insertNewArticleQueryForExecution);
+		
 		let { insertId } = insertArticles;
 		articleResult = { id: insertId };
+		
 
 		// 【articles_tags】
+		let insertNewArticlesTagsQueryForExecute = insertNewArticlesTagsQuery;
 		for (let tag of tagsResult) {
-			insertNewArticlesTagsQuery = insertNewArticlesTagsQuery.replace('ARTICLE_ID', articleResult.id).replace('TAG_ID', tag.id).replace('_CONTINUE_COMMA', ', (ARTICLE_ID, TAG_ID)_CONTINUE_COMMA');
+			insertNewArticlesTagsQueryForExecute = insertNewArticlesTagsQueryForExecute.replace('ARTICLE_ID', articleResult.id).replace('TAG_ID', tag.id).replace('_CONTINUE_COMMA', ', (ARTICLE_ID, TAG_ID)_CONTINUE_COMMA');
 		}
-		insertNewArticlesTagsQuery = insertNewArticlesTagsQuery.replace(', (ARTICLE_ID, TAG_ID)_CONTINUE_COMMA', '');
-		await query(insertNewArticlesTagsQuery);
+		insertNewArticlesTagsQueryForExecute = insertNewArticlesTagsQueryForExecute.replace(', (ARTICLE_ID, TAG_ID)_CONTINUE_COMMA', '');
+		await query(insertNewArticlesTagsQueryForExecute);
 
 		// 【articlesテーブルのcontentsカラムに存在するシングルクォート文字列を'に変換する】
-		updateArticlesContentsSingleQuote = updateArticlesContentsSingleQuote.replace('ARTICLE_ID', articleResult.id);
-		await query(updateArticlesContentsSingleQuote);
+		let updateArticlesContentsSingleQuoteForExecution = updateArticlesContentsSingleQuote.replace('ARTICLE_ID', articleResult.id);
+		await query(updateArticlesContentsSingleQuoteForExecution);
 
 		res.json(true);
 	} catch (err) {
@@ -290,12 +295,12 @@ router.post('/edit', async (req, res) => {
 		let queryParameter = req.body.params;
 
 		// 【category】
-		searchCategoryQuery = searchCategoryQuery.replace('CATEGORY_NAME', queryParameter.category);
-		const categoryRecord = await query(searchCategoryQuery);
+		let searchCategoryQueryForExecute = searchCategoryQuery.replace('CATEGORY_NAME', queryParameter.category);
+		const categoryRecord = await query(searchCategoryQueryForExecute);
 
 		if (!Object.keys(categoryRecord).length) {
-			insertNewCategoryQuery = insertNewCategoryQuery.replace('CATEGORY_NAME', queryParameter.category);
-			const insertCategory = await query(insertNewCategoryQuery);
+			let insertNewCategoryQueryForExecute = insertNewCategoryQuery.replace('CATEGORY_NAME', queryParameter.category);
+			const insertCategory = await query(insertNewCategoryQueryForExecute);
 			let { insertId } = insertCategory;
 			categoryResult = { id: insertId, name: queryParameter.category };
 
@@ -305,8 +310,8 @@ router.post('/edit', async (req, res) => {
 		}
 
 		// 【thumbnail】
-		searchThumbnailQuery = searchThumbnailQuery.replace('THUMBNAIL_NAME', queryParameter.thumbnail_name);
-		const thumbnailRecord = await query(searchThumbnailQuery);
+		let searchThumbnailQueryForExecute = searchThumbnailQuery.replace('THUMBNAIL_NAME', queryParameter.thumbnail_name);
+		const thumbnailRecord = await query(searchThumbnailQueryForExecute);
 
 		let { id, name, url, full_path } = thumbnailRecord[0];
 		thumbnailResult = { id: id, name: name, url: url, full_path: full_path };
@@ -334,12 +339,12 @@ router.post('/edit', async (req, res) => {
 
 		// 【series】
 		if (queryParameter.series.length) {
-			searchSeriesQuery = searchSeriesQuery.replace('SERIES_NAME', queryParameter.series);
-			const seriesRecord = await query(searchSeriesQuery);
+			let searchSeriesQueryForExecution = searchSeriesQuery.replace('SERIES_NAME', queryParameter.series);
+			const seriesRecord = await query(searchSeriesQueryForExecution);
 
 			if (!Object.keys(seriesRecord).length) {
-				insertNewSeriesQuery = insertNewSeriesQuery.replace('SERIES_NAME', queryParameter.series);
-				const insertSeries = await query(insertNewSeriesQuery);
+				let insertNewSeriesQueryForExecution = insertNewSeriesQuery.replace('SERIES_NAME', queryParameter.series);
+				const insertSeries = await query(insertNewSeriesQueryForExecution);
 				let { insertId } = insertSeries;
 				seriesResult = { id: insertId, name: queryParameter.series };
 
@@ -353,9 +358,10 @@ router.post('/edit', async (req, res) => {
 		}
 
 		// 【articles】
-		let contents = queryParameter.contents.replace(/\'/g, 'SINGLE_QUOTE').replace(/\"/g, 'DOUBLE_QUOTE');
+		let contents = queryParameter.contents.replace(/\"/g, '"').replace(/\n/g, '<br>');
+		contents = contents.replace(/\'/g, 'SINGLE_QUOTE').replace(/\"/g, 'DOUBLE_QUOTE');
 
-		updateArticleQuery = updateArticleQuery.replace('TITLE', queryParameter.title)
+		let updateArticleQueryForExecution = updateArticleQuery.replace('TITLE', queryParameter.title)
 			.replace('CATEGORY_ID', categoryResult.id)
 			.replace('CONTENTS', contents)
 			.replace('THUMBNAIL_ID', thumbnailResult.id)
@@ -363,23 +369,24 @@ router.post('/edit', async (req, res) => {
 			.replace('SERIES_ORDER', queryParameter.series_order)
 			.replace('UPDATED_AT', queryParameter.updated_at)
 			.replace('ARTICLE_ID', queryParameter.id);
-		await query(updateArticleQuery);
+		await query(updateArticleQueryForExecution);
 
 		// 【articles_tags】
 		// 既存のarticles_tagsテーブルの対象レコードは削除し、再登録する
-		deleteArticlesTagsQuery = deleteArticlesTagsQuery.replace('ARTICLE_ID', queryParameter.id);
+		let deleteArticlesTagsQueryForExecute = deleteArticlesTagsQuery.replace('ARTICLE_ID', queryParameter.id);
 		
-		await query(deleteArticlesTagsQuery);
+		await query(deleteArticlesTagsQueryForExecute);
 
+		let insertNewArticlesTagsQueryForExecute = insertNewArticlesTagsQuery;
 		for (let tag of tagsResult) {
-			insertNewArticlesTagsQuery = insertNewArticlesTagsQuery.replace('ARTICLE_ID', queryParameter.id).replace('TAG_ID', tag.id).replace('_CONTINUE_COMMA', ', (ARTICLE_ID, TAG_ID)_CONTINUE_COMMA');
+			insertNewArticlesTagsQueryForExecute = insertNewArticlesTagsQueryForExecute.replace('ARTICLE_ID', queryParameter.id).replace('TAG_ID', tag.id).replace('_CONTINUE_COMMA', ', (ARTICLE_ID, TAG_ID)_CONTINUE_COMMA');
 		}
-		insertNewArticlesTagsQuery = insertNewArticlesTagsQuery.replace(', (ARTICLE_ID, TAG_ID)_CONTINUE_COMMA', '');
-		await query(insertNewArticlesTagsQuery);
+		insertNewArticlesTagsQueryForExecute = insertNewArticlesTagsQueryForExecute.replace(', (ARTICLE_ID, TAG_ID)_CONTINUE_COMMA', '');
+		await query(insertNewArticlesTagsQueryForExecute);
 
 		// 【articlesテーブルのcontentsカラムに存在するシングルクォート文字列を'に変換する】
-		updateArticlesContentsSingleQuote = updateArticlesContentsSingleQuote.replace('ARTICLE_ID', queryParameter.id);
-		await query(updateArticlesContentsSingleQuote);
+		let updateArticlesContentsSingleQuoteForExecution = updateArticlesContentsSingleQuote.replace('ARTICLE_ID', queryParameter.id);
+		await query(updateArticlesContentsSingleQuoteForExecution);
 
 		res.json(true);
 	} catch (err) {

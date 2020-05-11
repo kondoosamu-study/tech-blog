@@ -40,6 +40,7 @@ export default {
       await this.googleLogin();
       await this.checkLoggedIn();
     },
+    ...mapActions(['fetchThumbnails']),
     ...mapActions("authentication", ["googleLogin"])
   }
 };

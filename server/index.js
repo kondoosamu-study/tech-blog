@@ -4,6 +4,7 @@ const express = require('express')
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const session = require('express-session');
+const routes = require('./api');
 
 const { Nuxt, Builder } = require('nuxt')
 const app = express()
@@ -65,6 +66,10 @@ async function start() {
     // app.get('/mng/login', (req, res) => {
     //     res.send({ loggedIn: req.session.loggedIn, user: req.session.user, email: req.session.email });
     // })
+
+    // API用ディレクトリの設定
+    // 将来的にここでMySQLクエリを行うソースを作成する
+    app.use('/api', routes);
 
     // Give nuxt middleware to express
     app.use(nuxt.render)

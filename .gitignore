@@ -91,3 +91,6 @@ sw.*
 
 # firebase's info
 plugins/firebase.js
+
+# MySQL
+server/mysql/index.js

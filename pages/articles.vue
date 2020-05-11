@@ -93,31 +93,28 @@
       <template class="w-100" v-slot:cell(name)="row">{{ row.value.first }} {{ row.value.last }}</template>
 
       <template class="w-100" v-slot:cell(actions)="row">
-        <b-button size="sm" @click="view(row.item, row.index, $event.target)" class="m-1">View</b-button>
-        <!-- <b-button size="sm" @click="goToEdit(row.item)" class="m-1">Edit</b-button> -->
-        <b-button size="sm" @click="$router.push(`/edit/${row.item.id}`)" class="m-1">Edit</b-button>
-        <b-button size="sm" v-if="row.item.deleted_at" @click="releaseArticle(row.item)" class="m-1">Release</b-button>
-        <b-button size="sm" v-else @click="softDelete(row.item)" class="m-1">Soft Delete</b-button>
-        <b-button size="sm" @click="warnToHardDelete(row.item)" class="m-1">Hard Delete</b-button>
+        <b-button size="sm" @click="view(row.item, row.index, $event.target)" variant="info" class="m-1">View</b-button>
+        <b-button size="sm" @click="$router.push(`/edit/${row.item.id}`)" variant="secondary" class="m-1">Edit</b-button>
+        <b-button size="sm" v-if="row.item.deleted_at" @click="releaseArticle(row.item)" variant="success" class="m-1">Release</b-button>
+        <b-button size="sm" v-else @click="softDelete(row.item)" variant="warning" class="m-1">Soft Delete</b-button>
+        <b-button size="sm" @click="warnToHardDelete(row.item)" variant="danger" class="m-1">Hard Delete</b-button>
       </template>
 
       <template class="w-100" v-slot:row-details="row">
         <b-card>
           <ul>
-            <li
-              class="textOverflow"
-              v-for="(value, key) in row.item"
-              :key="key"
-            >{{ key }}: {{ value }}</li>
+            <li class="textOverflow" v-for="(value, key) in row.item" :key="key">{{ key }}: {{ value }}</li>
           </ul>
         </b-card>
       </template>
     </b-table>
 
-    <!-- modal -->
+    <!-- info modal -->
     <b-modal :id="infoModal.id" :title="infoModal.title" ok-only @hide="resetInfoModal">
       <pre>{{ infoModal.content }}</pre>
+      <b-img :src="infoModal.thumbnail_url" thumbnail fluid class="p-4 bg-white"></b-img>
     </b-modal>
+    <!-- warn modal -->
     <b-modal ref="warn-modal" hide-footer :title="warnModal.title">
       <div class="d-block text-center">
         <h3>Do you want to Hard Delete?</h3>
@@ -131,8 +128,21 @@
 
 <script>
 import firebase from "~/plugins/firebase.js";
+import axios from 'axios';
+import { mapGetters, mapActions } from "vuex";
+import { NULL } from 'mysql/lib/protocol/constants/types';
 export default {
-  middleware: "auth",
+  // [機能概要]
+  // 1. auth
+  // 2. 全記事取得
+  // 3. soft deleted
+  // 4. Thumbnail情報を取得する
+  // 5. Hard Delete
+  // 6. その他テーブル関係の機能
+
+  // middleware: ["auth", "getThumbnails"],
+  // 一時コメントアウト
+  // middleware: "auth",
   layout: "mng",
   data() {
     return {
@@ -147,6 +157,18 @@ export default {
         {
           key: "title",
           label: "Title",
+          sortable: true,
+          class: "text-left"
+        },
+        {
+          key: "thumbnail_name",
+          label: "Thumbnail",
+          sortable: true,
+          class: "text-left"
+        },
+        {
+          key: "thumbnail_url",
+          label: "Thumbnail Image URL",
           sortable: true,
           class: "text-left"
         },
@@ -169,18 +191,30 @@ export default {
           class: "text-left textOverflow m-2"
         },
         {
+          key: "series",
+          label: "Series",
+          sortable: true,
+          class: "text-left textOverflow m-2"
+        },
+        {
+          key: "series_order",
+          label: "Series Order",
+          sortable: true,
+          class: "text-left textOverflow m-2"
+        },
+        {
           key: "created_at",
-          label: "Created at",
+          label: "Created At",
           sortable: true
         },
         {
           key: "updated_at",
-          label: "Updated at",
+          label: "Updated At",
           sortable: true
         },
         {
           key: "deleted_at",
-          label: "Deleted_at",
+          label: "Deleted At",
           sortable: true
         },
         { key: "actions", label: "Actions" }
@@ -195,7 +229,8 @@ export default {
       infoModal: {
         id: "info-modal",
         title: "",
-        content: ""
+        content: "",
+        thumbnailUrl: ""
       },
       warnModal: {
         id: "",
@@ -212,38 +247,45 @@ export default {
         .map(f => {
           return { text: f.label, value: f.key };
         });
-    }
+    },
+    ...mapGetters({ thumbnails: "getThumbnails" }),
+    // ...mapGetters({ articles: "getArticles" }),
   },
+  // 全記事取得のメソッド
   async asyncData() {
-     const results = await firebase
-        .database()
-        .ref("articles")
-        .once("value")
-        .then(snapshot => {
-          let result = [];
-          let firebaseRecodes = snapshot.val();
-          
-          for (let k in firebaseRecodes) {
-            // firebaseRecodes[k].contents = firebaseRecodes[k].contents.slice(0,10);
-            result.push(firebaseRecodes[k]);
-          }
-          
-          return result;
-        })
-        .catch(err => {
-          console.log("firebase's err =====", err);
-          return err;
-        });
-    return { items: results };
+    //  const results = await firebase
+    //     .database()
+    //     .ref("articles")
+    //     .once("value")
+    //     .then(snapshot => {
+    //       let result = [];
+    //       let firebaseRecodes = snapshot.val();
+    //       for (let recodeNumber in firebaseRecodes) {
+    //         result.push(firebaseRecodes[recodeNumber]);
+    //       }
+    //       return result;
+    //     })
+    //     .catch(err => {
+    //       console.log("firebase's err =====", err);
+    //       return err;
+    //     });
+
+    const { data } = await axios.get('http://0.0.0.0:3000/api/articles');
+
+    // return { items: results, articles: data };
+    return { items: data };
   },
-  mounted() {
-    // Set the initial number of items
+  // 描画された後に実行される為、firebaseが使用可能
+  async mounted() {
+    await this.fetchThumbnails();
+    await this.fetchAllArticles();
     this.totalRows = this.items.length;
   },
   methods: {
     view(item, index, button) {
       this.infoModal.title = `Row index: ${index}`;
       this.infoModal.content = JSON.stringify(item, null, 2);
+      this.infoModal.thumbnail_url = item.thumbnail_url;
       this.$root.$emit("bv::show::modal", this.infoModal.id, button);
     },
     async synchronizeFirebaseRecodes() {
@@ -273,20 +315,20 @@ export default {
       let hours = ("0" + date.getHours()).slice(-2);
       let minutes = ("0" + date.getMinutes()).slice(-2);
       let seconds = ("0" + date.getSeconds()).slice(-2);
-      let created_at = year + "/" + month + "/" + day + " " + hours + ":" + minutes + ":"  + seconds;
-      return created_at;
+      let createdAt = year + "-" + month + "-" + day + " " + hours + ":" + minutes + ":"  + seconds;
+      return createdAt;
     },
-    softDelete(item) {
+    async softDelete(item) {
       item.deleted_at = this.createDateTime();
-      let updates = {};
-      updates["/articles/" + item.id + "/"] = item;
-      return firebase.database().ref().update(updates);
+      const { data } = await axios.post('http://0.0.0.0:3000/api/soft-delete', item);
+
+      // let updates = {};
+      // updates["/articles/" + item.id + "/"] = item;
+      // return firebase.database().ref().update(updates);
     },
-    releaseArticle(item) {
-      item.deleted_at = "";
-      let updates = {};
-      updates["/articles/" + item.id + "/"] = item;
-      return firebase.database().ref().update(updates);
+    async releaseArticle(item) {
+      const { data } = await axios.post('http://0.0.0.0:3000/api/release', item);
+      item.deleted_at = data.deleted_at;
     },
     warnToHardDelete(item, index) {
       this.warnModal.id = item.id;
@@ -297,9 +339,11 @@ export default {
     hideModal() {
       this.$refs['warn-modal'].hide();
     },
-    hardDelete(id) {
-      firebase.database().ref('articles/' + id).remove();
-      this.synchronizeFirebaseRecodes();
+    async hardDelete(id) {
+      let targetId = {id: id};
+      const { data } = axios.post('http://0.0.0.0:3000/api/delete-article', targetId);
+      // [hard deleteしたarticleをitemsから削除する処理を追加する]
+
       this.$refs['warn-modal'].hide();
     },
     resetInfoModal() {
@@ -310,7 +354,8 @@ export default {
       // Trigger pagination to update the number of buttons/pages due to filtering
       this.totalRows = filteredItems.length;
       this.currentPage = 1;
-    }
+    },
+    ...mapActions(['fetchThumbnails', 'fetchAllArticles'])
   }
 };
 </script>

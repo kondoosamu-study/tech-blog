@@ -69,5 +69,12 @@ module.exports = {
     */
     extend(config, ctx) {
     }
-  }
+  },
+  /*
+   ** Server access
+   */
+  server: {
+    port: 3000,
+    host: "0.0.0.0",
+  },
 }

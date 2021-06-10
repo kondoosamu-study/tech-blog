@@ -118,8 +118,8 @@ export default {
   },
   async asyncData({ route }) {
     // const { data } = await axios.get(`http://0.0.0.0:3000/api/article/${route.params.id}`);
-    // const { data } = await axios.get(`http://adm.ok-engineering.net/api/article/${route.params.id}`);
-    const { data } = await axios.get(`http://localhost:3000/api/article/${route.params.id}`);
+    const { data } = await axios.get(`http://adm.ok-engineering.net/api/article/${route.params.id}`);
+    // const { data } = await axios.get(`http://localhost:3000/api/article/${route.params.id}`);
     console.log('asyncData === ', data);
     let tags = data[0].tags.split(',');
     data[0].tags = tags;
@@ -148,15 +148,15 @@ export default {
     },
     async releaseArticle() {
       // const { data } = await axios.post('http://0.0.0.0:3000/api/release', this.form);
-      // const { data } = await axios.post('http://adm.ok-engineering.net/api/release', this.form);
-      const { data } = await axios.post('http://localhost:3000/api/release', this.form);
+      const { data } = await axios.post('http://adm.ok-engineering.net/api/release', this.form);
+      // const { data } = await axios.post('http://localhost:3000/api/release', this.form);
       this.form.deleted_at = data.deleted_at;
     },
     async softDelete() {
       this.form.deleted_at = this.createDateTime();
       // const { data } = await axios.post('http://0.0.0.0:3000/api/soft-delete', this.form);
-      // const { data } = await axios.post('http://adm.ok-engineering.net/api/soft-delete', this.form);
-      const { data } = await axios.post('http://localhost:3000/api/soft-delete', this.form);
+      const { data } = await axios.post('http://adm.ok-engineering.net/api/soft-delete', this.form);
+      // const { data } = await axios.post('http://localhost:3000/api/soft-delete', this.form);
     },
     warnToHardDelete(){
       this.warnModal.content = JSON.stringify(this.form, null, 2);
@@ -166,7 +166,9 @@ export default {
       this.$refs['warn-modal'].hide();
     },
     async hardDelete() {
+      // const { data } = axios.post('http://0.0.0.0:3000/api/delete-article', this.form.id);
       const { data } = axios.post('http://adm.ok-engineering.net/api/delete-article', this.form.id);
+      // const { data } = axios.post('http://localhost:3000/api/delete-article', this.form.id);
       // [hard deleteしたarticleをitemsから削除する処理を追加する]
 
       this.$refs['warn-modal'].hide();

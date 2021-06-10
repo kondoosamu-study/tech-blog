@@ -71,8 +71,8 @@ export const actions = {
   async fetchAllArticles({ commit }) {
     // const { data } = await axios.get('/api/articles');
     // const { data } = await axios.get('http://0.0.0.0:3000/api/articles');
-    // const { data } = await axios.get('http://adm.ok-engineering.net/api/articles');
-    const { data } = await axios.get('http://localhost:3000/api/articles');
+    const { data } = await axios.get('http://adm.ok-engineering.net/api/articles');
+    // const { data } = await axios.get('http://localhost:3000/api/articles');
     console.log('all articles ===== ', data);
     
     commit('setAllArticles', data);
@@ -110,8 +110,8 @@ export const actions = {
   async fetchAllCategories({ commit }) {
     // const { data } = await axios.get('/api/category');
     // const { data } = await axios.get('http://0.0.0.0:3000/api/category');
-    // const { data } = await axios.get('http://adm.ok-engineering.net/api/category');
-    const { data } = await axios.get('http://localhost:3000/api/category');
+    const { data } = await axios.get('http://adm.ok-engineering.net/api/category');
+    // const { data } = await axios.get('http://localhost:3000/api/category');
     commit('setAllCategories', data);
     
     let categoriesName = [];
@@ -123,8 +123,8 @@ export const actions = {
   async fetchAllTags({ commit }) {
     // const { data } = await axios.get('/api/tag');
     // const { data } = await axios.get('http://0.0.0.0:3000/api/tag');
-    // const { data } = await axios.get('http://adm.ok-engineering.net/api/tag');
-    const { data } = await axios.get('http://localhost:3000/api/tag');
+    const { data } = await axios.get('http://adm.ok-engineering.net/api/tag');
+    // const { data } = await axios.get('http://localhost:3000/api/tag');
     console.log(data);
     
     commit('setAllTags', data);
@@ -138,8 +138,8 @@ export const actions = {
   async fetchAllSeries({ commit }) {
     // const { data } = await axios.get('/api/series');
     // const { data } = await axios.get('http://0.0.0.0:3000/api/series');
-    // const { data } = await axios.get('http://adm.ok-engineering.net/api/series');
-    const { data } = await axios.get('http://localhost:3000/api/series');
+    const { data } = await axios.get('http://adm.ok-engineering.net/api/series');
+    // const { data } = await axios.get('http://localhost:3000/api/series');
     commit('setAllSeries', data);
     
     let seriesName = [];
@@ -150,8 +150,8 @@ export const actions = {
   },
   async insertNewArticle({},{ form }) {
     // let { data } = await axios.post('http://0.0.0.0:3000/api/new-article', {params: form});
-    // let { data } = await axios.post('http://adm.ok-engineering.net/api/new-article', {params: form});
-    let { data } = await axios.post('http://localhost:3000/api/new-article', {params: form});
+    let { data } = await axios.post('http://adm.ok-engineering.net/api/new-article', {params: form});
+    // let { data } = await axios.post('http://localhost:3000/api/new-article', {params: form});
     
     if (data === true) {
       this.$router.push("/articles");
@@ -159,8 +159,8 @@ export const actions = {
   },
   async updateArticle({},{ form }) {
     // let { data } = await axios.post('http://0.0.0.0:3000/api/edit', {params: form});
-    // let { data } = await axios.post('http://adm.ok-engineering.net/api/edit', {params: form});
-    let { data } = await axios.post('http://localhost:3000/api/edit', {params: form});
+    let { data } = await axios.post('http://adm.ok-engineering.net/api/edit', {params: form});
+    // let { data } = await axios.post('http://localhost:3000/api/edit', {params: form});
     console.log(data);
     
     

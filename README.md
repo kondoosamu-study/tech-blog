@@ -24,3 +24,9 @@ npm version is 6.14.4
 Node.js version is 13.13.0
 
 For detailed explanation on how things work, check out [Nuxt.js docs](https://nuxtjs.org).
+
+# ローカル環境での実行注意点
+以下のURLでないと投稿できないので注意。
+```
+http://0.0.0.0:3000/
+```

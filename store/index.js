@@ -69,7 +69,8 @@ export const mutations = {
 // clientサイドではfetchで呼び出す
 export const actions = {
   async fetchAllArticles({ commit }) {
-    const { data } = await axios.get('/api/articles');
+    // const { data } = await axios.get('/api/articles');
+    const { data } = await axios.get('http://0.0.0.0:3000/api/articles');
     console.log('all articles ===== ', data);
     
     commit('setAllArticles', data);

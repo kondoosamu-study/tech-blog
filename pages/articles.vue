@@ -272,7 +272,8 @@ export default {
 
     // const { data } = await axios.get('http://0.0.0.0:3000/api/articles');
     // const { data } = await axios.get('https://adm.ok-engineering.net/api/articles');
-    const { data } = await axios.get('http://adm.ok-engineering.net/api/articles');
+    // const { data } = await axios.get('http://adm.ok-engineering.net/api/articles');
+    const { data } = await axios.get('http://adm.ok-engineering.net:3000/api/articles');
     // const { data } = await axios.get('http://localhost:3000/api/articles');
 
     // return { items: results, articles: data };
@@ -325,7 +326,8 @@ export default {
       item.deleted_at = this.createDateTime();
       // const { data } = await axios.post('http://0.0.0.0:3000/api/soft-delete', item);
       // const { data } = await axios.post('https://adm.ok-engineering.net/api/soft-delete', item);
-      const { data } = await axios.post('http://adm.ok-engineering.net/api/soft-delete', item);
+      // const { data } = await axios.post('http://adm.ok-engineering.net/api/soft-delete', item);
+      const { data } = await axios.post('http://adm.ok-engineering.net:3000/api/soft-delete', item);
       // const { data } = await axios.post('http://localhost:3000/api/soft-delete', item);
 
       // let updates = {};
@@ -335,7 +337,8 @@ export default {
     async releaseArticle(item) {
       // const { data } = await axios.post('http://0.0.0.0:3000/api/release', item);
       // const { data } = await axios.post('https://adm.ok-engineering.net/api/release', item);
-      const { data } = await axios.post('http://adm.ok-engineering.net/api/release', item);
+      // const { data } = await axios.post('http://adm.ok-engineering.net/api/release', item);
+      const { data } = await axios.post('http://adm.ok-engineering.net:3000/api/release', item);
       // const { data } = await axios.post('http://localhost:3000/api/release', item);
       item.deleted_at = data.deleted_at;
     },
@@ -352,7 +355,8 @@ export default {
       let targetId = {id: id};
       // const { data } = axios.post('http://0.0.0.0:3000/api/delete-article', targetId);
       // const { data } = axios.post('https://adm.ok-engineering.net/api/delete-article', targetId);
-      const { data } = axios.post('http://adm.ok-engineering.net/api/delete-article', targetId);
+      // const { data } = axios.post('http://adm.ok-engineering.net/api/delete-article', targetId);
+      const { data } = axios.post('http://adm.ok-engineering.net:3000/api/delete-article', targetId);
       // const { data } = axios.post('http://localhost:3000/api/delete-article', targetId);
       // [hard deleteしたarticleをitemsから削除する処理を追加する]
 
